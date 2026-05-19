@@ -1,0 +1,20 @@
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+firebase-debug.*.log
+
+# Functions
+functions/node_modules/
+
+# Secrets e config local
+.env
+.env.*
+functions/.env
+public/config.local.js
+
+# OS
+.DS_Store
+Thumbs.db
+service-account.json
+.vercel

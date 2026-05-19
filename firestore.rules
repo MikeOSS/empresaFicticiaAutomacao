@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /alertas/{alertaId} {
+      // Leitura pública — os dados são operacionais, não pessoais
+      allow read: if true;
+      // Escrita bloqueada no cliente — apenas o servidor (firebase-admin) pode gravar
+      allow write: if false;
+    }
+  }
+}

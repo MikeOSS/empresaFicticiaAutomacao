@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ALTACLP · Alert Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --surface: #111318;
+      --surface-2: #161922;
+      --border: #252a36;
+      --text: #e8eaef;
+      --muted: #8b93a7;
+      --green: #00d4aa;
+      --red: #ff4d4d;
+      --yellow: #f5a623;
+      --header-h: 64px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "IBM Plex Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-top: var(--header-h);
+    }
+
+    .mono { font-family: "IBM Plex Mono", monospace; }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .brand h1 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.5); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0, 212, 170, 0); }
+    }
+
+    /* Main */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Dashboard */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .metric-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+
+    .metric-value.green { color: var(--green); }
+    .metric-value.red { color: var(--red); }
+
+    /* Columns */
+    .columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      min-height: calc(100vh - var(--header-h) - 180px);
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .queue {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Alert card */
+    .alert-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .alert-card:hover { border-color: #3a4255; }
+    .alert-card.selected { border-color: var(--green); background: #121820; }
+    .alert-card.analyzing {
+      border-color: var(--yellow);
+      animation: card-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes card-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.2); }
+      50% { box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.15); }
+    }
+
+    .alert-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .alert-id {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-recurrent {
+      background: rgba(255, 77, 77, 0.15);
+      color: var(--red);
+      border: 1px solid rgba(255, 77, 77, 0.35);
+    }
+
+    .badge-status {
+      background: #1e2433;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .badge-status.pending { color: var(--muted); }
+    .badge-status.analyzing {
+      background: rgba(245, 166, 35, 0.15);
+      color: var(--yellow);
+      border-color: rgba(245, 166, 35, 0.4);
+      animation: blink 0.9s step-end infinite;
+    }
+
+    .badge-status.real {
+      background: rgba(255, 77, 77, 0.12);
+      color: var(--red);
+      border-color: rgba(255, 77, 77, 0.35);
+    }
+
+    .badge-status.false-pos {
+      background: rgba(0, 212, 170, 0.12);
+      color: var(--green);
+      border-color: rgba(0, 212, 170, 0.35);
+    }
+
+    @keyframes blink {
+      50% { opacity: 0.5; }
+    }
+
+    .alert-machine {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .alert-client {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .alert-type {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .alert-history {
+      font-size: 0.75rem;
+      color: #a0a8bc;
+      line-height: 1.4;
+    }
+
+    .alert-actions {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      font-family: "IBM Plex Sans", sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: var(--green);
+      background: rgba(0, 212, 170, 0.08);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: rgba(0, 212, 170, 0.12);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    /* Analysis panel */
+    .analysis-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .analysis-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+
+    .verdict {
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fade-in 0.4s ease forwards;
+    }
+
+    .verdict.real {
+      background: rgba(255, 77, 77, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(255, 77, 77, 0.3);
+    }
+
+    .verdict.false-pos {
+      background: rgba(0, 212, 170, 0.12);
+      color: var(--green);
+      border: 1px solid rgba(0, 212, 170, 0.3);
+    }
+
+    @keyframes fade-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .reasoning {
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: #c5cad6;
+      margin-bottom: 18px;
+      opacity: 0;
+      animation: fade-in 0.5s ease 0.1s forwards;
+    }
+
+    .actions-list {
+      list-style: none;
+      margin-bottom: 18px;
+      opacity: 0;
+      animation: fade-in 0.5s ease 0.2s forwards;
+    }
+
+    .actions-list li {
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .actions-list li::before {
+      content: "→";
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .confidence-wrap {
+      margin-bottom: 14px;
+      opacity: 0;
+      animation: fade-in 0.5s ease 0.25s forwards;
+    }
+
+    .confidence-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .confidence-bar {
+      height: 6px;
+      background: var(--bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--yellow), var(--green));
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .economy {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.95rem;
+      color: var(--green);
+      opacity: 0;
+      animation: fade-in 0.5s ease 0.3s forwards;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--yellow);
+      font-size: 0.9rem;
+      padding: 20px 0;
+    }
+
+    .loading-dots span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--yellow);
+      border-radius: 50%;
+      animation: dot-bounce 1.2s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes dot-bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    .error-box {
+      background: rgba(255, 77, 77, 0.1);
+      border: 1px solid rgba(255, 77, 77, 0.35);
+      color: #ff8a8a;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .panel-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-analyze-all {
+      width: 100%;
+      padding: 10px;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard { grid-template-columns: repeat(2, 1fr); }
+      .columns { grid-template-columns: 1fr; }
+      .header { flex-wrap: wrap; height: auto; padding: 12px 16px; }
+      body { padding-top: 100px; }
+    }
+
+    @media (max-width: 500px) {
+      .dashboard { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="brand">
+      <span class="online-dot" aria-hidden="true"></span>
+      <h1>ALTACLP · ALERT INTELLIGENCE</h1>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="dashboard" aria-label="Métricas">
+      <article class="metric">
+        <div class="metric-label">Taxa de falsos atual</div>
+        <div class="metric-value red" id="metricFalseRate">61%</div>
+      </article>
+      <article class="metric">
+        <div class="metric-label">Custo mensal evitado</div>
+        <div class="metric-value green" id="metricSavings">R$ 0</div>
+      </article>
+      <article class="metric">
+        <div class="metric-label">Alertas na fila</div>
+        <div class="metric-value" id="metricQueue">9</div>
+      </article>
+      <article class="metric">
+        <div class="metric-label">Analisados hoje</div>
+        <div class="metric-value" id="metricAnalyzed">0</div>
+      </article>
+    </section>
+
+    <section class="columns">
+      <article class="panel">
+        <div class="panel-head">Fila de alertas</div>
+        <div class="queue" id="queue"></div>
+        <div class="panel-footer">
+          <button type="button" class="btn btn-primary btn-analyze-all" id="btnAnalyzeAll">Analisar todos</button>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">Análise do agente</div>
+        <div class="analysis-body" id="analysisPanel">
+          <p class="analysis-empty">Selecione um alerta e clique em <strong>Analisar</strong> para o agente de IA classificar o incidente.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    // ── FIREBASE CONFIG ───────────────────────────────────────────────────────
+    // Obtenha em: Firebase Console → Configurações do projeto → Seus apps → Web app
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJbczvlZIt0BgIAzv8xabD0mBRZ9_Bvn4",       // ← obrigatório
+      authDomain: "altaclp-de762.firebaseapp.com",
+      projectId: "altaclp-de762",
+      storageBucket: "altaclp-de762.firebasestorage.app",
+      messagingSenderId: "121533994509",
+      appId: "1:121533994509:web:2dca391710ec449770a744"                      // ← obrigatório
+    };
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const BASELINE_FALSE_RATE = 61;
+    const TARGET_FALSE_RATE = 35;
+    // URL da Cloud Function (Firebase). Atualize após deploy se mudar — firebase deploy --only functions
+    const CLOUD_ANALYZE_URL = "https://analyzealert-s7qgmsdhia-uc.a.run.app";
+
+    function resolveAnalyzeUrl() {
+      if (window.ALTACLP_CONFIG && window.ALTACLP_CONFIG.analyzeUrl) {
+        return window.ALTACLP_CONFIG.analyzeUrl;
+      }
+      const h = location.hostname;
+      if (
+        h.endsWith(".web.app") ||
+        h.endsWith(".firebaseapp.com") ||
+        h === "localhost" ||
+        h === "127.0.0.1"
+      ) {
+        return "/api/analyze";
+      }
+      return CLOUD_ANALYZE_URL;
+    }
+
+    const ANALYZE_URL = resolveAnalyzeUrl();
+
+    // ── STATE ─────────────────────────────────────────────────────────────────
+    let alertsMap = new Map();   // id → objeto de alerta
+    let alertOrder = [];         // IDs na ordem do Firestore (timestamp desc)
+    let alerts = [];             // array ordenado para renderização
+    let selectedId = null;
+    let analyzingAll = false;
+    // Resultados só nesta aba — F5 zera tudo (ignora status/resultado do Firestore)
+    const sessionState = new Map();
+
+    // ── DOM ───────────────────────────────────────────────────────────────────
+    const $ = (id) => document.getElementById(id);
+    const queueEl = $("queue");
+    const analysisPanel = $("analysisPanel");
+
+    // ── FORMATTERS ────────────────────────────────────────────────────────────
+    const brlFmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+    function brl(n) { return brlFmt.format(n); }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function statusLabel(s) {
+      return { PENDING: "PENDENTE", ANALYZING: "ANALISANDO", REAL: "REAL", FALSE_POSITIVE: "FALSO POSITIVO" }[s] || s;
+    }
+
+    function statusClass(s) {
+      return { PENDING: "pending", ANALYZING: "analyzing", REAL: "real", FALSE_POSITIVE: "false-pos" }[s] || "pending";
+    }
+
+    function isRealResult(result) {
+      const v = result?.is_real;
+      if (v === true || v === 1) return true;
+      if (typeof v === "string" && v.trim().toLowerCase() === "true") return true;
+      return false;
+    }
+
+    // ── FIRESTORE ADAPTER ─────────────────────────────────────────────────────
+    const SENSOR_LABELS = {
+      pressao: "Sensor pressão",
+      temperatura: "Sensor temperatura",
+      valvula_atuador: "Válvula/atuador",
+      vibracao: "Sensor vibração"
+    };
+
+    function firestoreToAlert(docId, data) {
+      const historico = data.historico || [];
+      const recurrent = historico.filter(h => h.tecnico_despachado && !h.falha_encontrada).length >= 2;
+      const tsDate = data.timestamp
+        ? data.timestamp.substring(0, 10).split("-").reverse().join("/")
+        : "—";
+      const sensorLabel = SENSOR_LABELS[data.sensor] || data.sensor;
+      const histText = historico.length > 0
+        ? historico.map(h =>
+            `${h.data}: ${h.leitura} ${data.unidade} — tec: ${h.tecnico_despachado ? "sim" : "não"}, falha: ${h.falha_encontrada ? "sim" : "não"}`
+          ).join(" | ")
+        : "Primeira ocorrência — sem histórico de visitas";
+
+      return {
+        id: data.id || docId,
+        machine: data.maquina,
+        client: data.cliente,
+        type: `${sensorLabel} — ${data.leitura_atual} ${data.unidade}`,
+        date: tsDate,
+        history: histText,
+        recurrent,
+        status: "PENDING",
+        result: null,
+        error: null,
+        _raw: { ...data, id: data.id || docId }
+      };
+    }
+
+    // ── FIRESTORE SYNC ────────────────────────────────────────────────────────
+    function syncFromFirestore(snapshot) {
+      alertOrder = snapshot.docs.map(d => d.id);
+      snapshot.docs.forEach(docSnap => {
+        const existing = alertsMap.get(docSnap.id);
+        const converted = firestoreToAlert(docSnap.id, docSnap.data());
+        const session = sessionState.get(docSnap.id);
+
+        if (existing && existing.status === "ANALYZING") {
+          alertsMap.set(docSnap.id, { ...converted, status: "ANALYZING", error: null });
+        } else if (session) {
+          alertsMap.set(docSnap.id, { ...converted, ...session });
+        } else {
+          alertsMap.set(docSnap.id, converted);
+        }
+      });
+      rebuildAlertsArray();
+      renderQueue();
+      renderAnalysis();
+      updateMetrics();
+    }
+
+    function rebuildAlertsArray() {
+      alerts = alertOrder.map(id => alertsMap.get(id)).filter(Boolean);
+    }
+
+    // ── METRICS ───────────────────────────────────────────────────────────────
+    function updateMetrics() {
+      const pending = alerts.filter(a => a.status === "PENDING").length;
+      const analyzed = alerts.filter(a => a.status === "REAL" || a.status === "FALSE_POSITIVE");
+      const blocked = analyzed.filter(a => a.status === "FALSE_POSITIVE");
+      const savings = analyzed.reduce((sum, a) => sum + (a.result?.economia_gerada ?? 0), 0);
+
+      const reductionMax = BASELINE_FALSE_RATE - TARGET_FALSE_RATE;
+      const reduction = blocked.length > 0 ? (blocked.length / alerts.length) * reductionMax : 0;
+      const falseRate = Math.max(TARGET_FALSE_RATE, BASELINE_FALSE_RATE - reduction);
+
+      $("metricFalseRate").textContent = `${falseRate.toFixed(1)}%`;
+      $("metricSavings").textContent = brl(savings);
+      $("metricQueue").textContent = String(pending);
+      $("metricAnalyzed").textContent = String(analyzed.length);
+    }
+
+    // ── RENDER ────────────────────────────────────────────────────────────────
+    function renderQueue() {
+      if (alerts.length === 0) {
+        queueEl.innerHTML = `<p style="color:var(--muted);font-size:0.88rem;padding:16px;text-align:center">Carregando alertas do Firestore…</p>`;
+        return;
+      }
+      queueEl.innerHTML = alerts.map(a => `
+        <article class="alert-card ${selectedId === a.id ? "selected" : ""} ${a.status === "ANALYZING" ? "analyzing" : ""}"
+          data-id="${a.id}" role="button" tabindex="0">
+          <div class="alert-top">
+            <span class="alert-id">${a.id}</span>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+              ${a.recurrent ? '<span class="badge badge-recurrent">Recorrente</span>' : ""}
+              <span class="badge badge-status ${statusClass(a.status)}">${statusLabel(a.status)}</span>
+            </div>
+          </div>
+          <div class="alert-machine">${a.machine}</div>
+          <div class="alert-client">${a.client}</div>
+          <div class="alert-type">${a.type} · ${a.date}</div>
+          <div class="alert-history">${a.history}</div>
+          <div class="alert-actions">
+            <button type="button" class="btn" data-analyze="${a.id}" ${a.status !== "PENDING" ? "disabled" : ""}>Analisar</button>
+          </div>
+        </article>`).join("");
+    }
+
+    function renderLoading(alert) {
+      analysisPanel.innerHTML = `
+        <div class="loading">
+          <span>Analisando ${alert.id}</span>
+          <span class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        </div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:8px;">Consultando agente via Firebase…</p>`;
+    }
+
+    function renderError(message) {
+      analysisPanel.innerHTML = `<div class="error-box"><strong>Falha na análise</strong><br>${message}</div>`;
+    }
+
+    function renderResult(alert) {
+      if (!alert.result) {
+        analysisPanel.innerHTML = `<p class="analysis-empty">Nenhum resultado para este alerta.</p>`;
+        return;
+      }
+      const r = alert.result;
+      const isReal = alert.status === "REAL" || isRealResult(r);
+      const verdictClass = isReal ? "real" : "false-pos";
+      const conf = Math.min(100, Math.max(0, Number(r.confidence) || 0));
+
+      analysisPanel.innerHTML = `
+        <div class="verdict ${verdictClass}">${escapeHtml(r.verdict || (isReal ? "ALERTA REAL — Despachar técnico" : "FALSO POSITIVO — Despacho bloqueado"))}</div>
+        <p class="section-title">Raciocínio do agente</p>
+        <p class="reasoning">${escapeHtml(r.reasoning || "—")}</p>
+        <p class="section-title">Ações recomendadas</p>
+        <ul class="actions-list">
+          ${(r.actions || []).map(act => `<li>${escapeHtml(act)}</li>`).join("")}
+        </ul>
+        <div class="confidence-wrap">
+          <div class="confidence-meta">
+            <span>Confiança da classificação</span>
+            <span class="mono">${conf}%</span>
+          </div>
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%"></div></div>
+        </div>
+        <p class="section-title">Economia gerada neste alerta</p>
+        <p class="economy">${brl(Number(r.economia_gerada) || 0)}</p>`;
+    }
+
+    function renderAnalysis() {
+      const alert = alertsMap.get(selectedId);
+      if (!alert) {
+        analysisPanel.innerHTML = `<p class="analysis-empty">Selecione um alerta e clique em <strong>Analisar</strong>. A análise roda no backend Firebase (chave Groq protegida).</p>`;
+        return;
+      }
+      if (alert.status === "ANALYZING") { renderLoading(alert); return; }
+      if (alert.error) { renderError(alert.error); return; }
+      if (alert.result) { renderResult(alert); return; }
+      analysisPanel.innerHTML = `
+        <p class="analysis-empty">
+          <strong>${alert.id}</strong> — ${alert.machine}<br><br>
+          Clique em <strong>Analisar</strong> para enviar este incidente ao agente (Firebase).
+        </p>`;
+    }
+
+    // ── API ───────────────────────────────────────────────────────────────────
+    async function callAnalyzeApi(alert) {
+      const raw = alert._raw;
+      const res = await fetch(ANALYZE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alert: {
+            id: raw.id,
+            maquina: raw.maquina,
+            cliente: raw.cliente,
+            sensor: raw.sensor,
+            leitura_atual: raw.leitura_atual,
+            unidade: raw.unidade,
+            limite_maximo: raw.limite_maximo ?? null,
+            limite_minimo: raw.limite_minimo ?? null,
+            timestamp: raw.timestamp,
+            historico: raw.historico || []
+          }
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erro HTTP ${res.status}`);
+      return data;
+    }
+
+    // ── ANALYZE ───────────────────────────────────────────────────────────────
+    async function analyzeAlert(id) {
+      const alert = alertsMap.get(id);
+      if (!alert || alert.status !== "PENDING") return;
+
+      selectedId = id;
+      alertsMap.set(id, { ...alert, status: "ANALYZING", error: null });
+      rebuildAlertsArray();
+      renderQueue();
+      renderAnalysis();
+
+      try {
+        const result = await callAnalyzeApi(alert);
+        const newStatus = isRealResult(result) ? "REAL" : "FALSE_POSITIVE";
+        const session = { status: newStatus, result, error: null };
+        sessionState.set(id, session);
+        alertsMap.set(id, { ...alert, ...session });
+      } catch (err) {
+        sessionState.delete(id);
+        alertsMap.set(id, { ...alert, status: "PENDING", result: null, error: err.message || "Erro desconhecido." });
+      }
+
+      rebuildAlertsArray();
+      renderQueue();
+      renderAnalysis();
+      updateMetrics();
+    }
+
+    async function analyzeAll() {
+      if (analyzingAll) return;
+      analyzingAll = true;
+      $("btnAnalyzeAll").disabled = true;
+
+      const pendingIds = alerts.filter(a => a.status === "PENDING").map(a => a.id);
+      for (const id of pendingIds) {
+        await analyzeAlert(id);
+        await new Promise(r => setTimeout(r, 400));
+      }
+
+      analyzingAll = false;
+      $("btnAnalyzeAll").disabled = false;
+    }
+
+    // ── EVENTS ────────────────────────────────────────────────────────────────
+    queueEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-analyze]");
+      if (btn) {
+        e.stopPropagation();
+        analyzeAlert(btn.getAttribute("data-analyze"));
+        return;
+      }
+      const card = e.target.closest(".alert-card");
+      if (!card) return;
+      selectedId = card.getAttribute("data-id");
+      renderQueue();
+      renderAnalysis();
+    });
+
+    queueEl.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const card = e.target.closest(".alert-card");
+      if (!card) return;
+      e.preventDefault();
+      selectedId = card.getAttribute("data-id");
+      renderQueue();
+      renderAnalysis();
+    });
+
+    $("btnAnalyzeAll").addEventListener("click", analyzeAll);
+
+    // ── INIT ──────────────────────────────────────────────────────────────────
+    renderAnalysis();
+
+    if (firebaseConfig.apiKey === "COLE_AQUI_A_API_KEY_DO_FIREBASE") {
+      queueEl.innerHTML = `<div class="error-box" style="margin:12px">
+        <strong>Configure o Firebase:</strong><br>
+        Abra <code>public/index.html</code>, localize o bloco <em>FIREBASE CONFIG</em>
+        e substitua <code>COLE_AQUI_A_API_KEY_DO_FIREBASE</code> e <code>COLE_AQUI_O_APP_ID</code>.<br><br>
+        Firebase Console → Configurações do projeto → Seus apps → Web app → Config
+      </div>`;
+    } else {
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const q = query(collection(db, "alertas"), orderBy("timestamp", "desc"));
+      onSnapshot(q, syncFromFirestore, err => {
+        queueEl.innerHTML = `<div class="error-box" style="margin:12px">
+          <strong>Erro ao carregar alertas do Firestore:</strong> ${err.message}
+        </div>`;
+      });
+    }
+  </script>
+</body>
+</html>
