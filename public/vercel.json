@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/analyze",
-      "destination": "https://analyzealert-s7qgmsdhia-uc.a.run.app"
+      "destination": "https://us-central1-altaclp-de762.cloudfunctions.net/analyzeAlert"
     }
   ]
 }
