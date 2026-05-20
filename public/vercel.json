@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/analyze",
-      "destination": "https://analyzealert-s7qgmsdhia-uc.a.run.app"
-    }
-  ]
-}
