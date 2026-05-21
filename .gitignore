@@ -17,3 +17,5 @@ public/config.local.js
 .DS_Store
 Thumbs.db
 service-account.json
+
+.vercel
